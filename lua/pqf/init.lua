@@ -5,10 +5,10 @@ local M = {}
 -- The names of the sign types, and the symbols to insert into the quickfix
 -- window.
 local signs = {
-  error = 'E',
-  warning = 'W',
-  info = 'I',
-  hint = 'H',
+  error = { text = 'E', texthl = 'DiagnosticError' },
+  warning = { text = 'W', texthl = 'DiagnosticWarn' },
+  info = { text = 'I', texthl = 'DiagnosticInfo' },
+  hint = { text = 'H', texthl = 'DiagnosticHint' },
 }
 
 local namespace = api.nvim_create_namespace('pqf')
@@ -32,8 +32,13 @@ local diagnostic_signs = {
 for diagnostic_sign, key in pairs(diagnostic_signs) do
   local sign_def = fn.sign_getdefined(diagnostic_sign)[1]
 
-  if sign_def and sign_def.text then
-    signs[key] = vim.trim(sign_def.text)
+  if sign_def then
+    if sign_def.text then
+      signs[key].text = vim.trim(sign_def.text)
+    end
+    if sign_def.texthl then
+      signs[key].texthl = sign_def.texthl
+    end
   end
 end
 
@@ -95,10 +100,10 @@ function M.format(info)
   local lines = {}
   local pad_to = 0
   local type_mapping = {
-    E = { signs.error, 'DiagnosticError' },
-    W = { signs.warning, 'DiagnosticWarn' },
-    I = { signs.info, 'DiagnosticInfo' },
-    N = { signs.hint, 'DiagnosticHint' },
+    E = { signs.error.text, signs.error.texthl },
+    W = { signs.warning.text, signs.warning.texthl },
+    I = { signs.info.text, signs.info.texthl },
+    N = { signs.hint.text, signs.hint.texthl },
   }
 
   local items = {}
@@ -251,7 +256,9 @@ function M.setup(opts)
 
   if opts.signs then
     assert(type(opts.signs) == 'table', 'the "signs" option must be a table')
-    signs = vim.tbl_extend('force', signs, opts.signs)
+    for key, text in pairs(opts.signs) do
+      signs[key].text = text
+    end
   end
 
   if opts.show_multiple_lines then
